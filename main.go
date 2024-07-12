@@ -18,32 +18,30 @@ const userCollection = "users"
 
 var config = fiber.Config{
 	ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-			return ctx.JSON(map[string]string{"error": err.Error()})
+		return ctx.JSON(map[string]string{"error": err.Error()})
 	},
 }
 
 func main() {
 
-  client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
 	if err != nil {
 		log.Fatal(err)
 	}
-	port := flag.String("port", ":5000", "The port of api");
+	port := flag.String("port", ":5000", "The port of api")
 	flag.Parse()
 
-  app := fiber.New(config)
+	app := fiber.New(config)
 
-	 //handler initialization 
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client));
+	//handler initialization
+	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
 
 	apiv1 := app.Group("/api/v1")
-	apiv1.Get("/foo", handleFoo)
+	apiv1.Post("/user", userHandler.HandlePostUser)
 	apiv1.Get("/user", userHandler.HandleListUsers)
+	apiv1.Put("/user/:id", userHandler.HandlePutUser)
+	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)
 	apiv1.Get("/user/:id", userHandler.HandleGetUser)
 
 	app.Listen(*port)
-}
-
-func handleFoo(c *fiber.Ctx) error {
-	return c.JSON(map[string]string{"msg": "hello foo"})
 }
