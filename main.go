@@ -13,8 +13,6 @@ import (
 )
 
 const dburi = "mongodb://localhost:27017"
-const dbname = "hotel-reservation-db"
-const userCollection = "users"
 
 var config = fiber.Config{
 	ErrorHandler: func(ctx *fiber.Ctx, err error) error {
@@ -28,13 +26,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	port := flag.String("port", ":5000", "The port of api")
 	flag.Parse()
 
-	app := fiber.New(config)
-
-	//handler initialization
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
+	var (
+	app = fiber.New(config)
+	port = flag.String("port", ":5000", "The port of api")
+	userHandler = api.NewUserHandler(db.NewMongoUserStore(client, db.DBNAME))
+	hotelStore = db.NewMongoHotelStore(client)
+	roomStore = db.NewMongoRoomStore(client, hotelStore)
+	hotelHandler = api.NewHotelHandler(hotelStore, roomStore)
+	)
 
 	apiv1 := app.Group("/api/v1")
 	apiv1.Post("/user", userHandler.HandlePostUser)
@@ -42,6 +43,8 @@ func main() {
 	apiv1.Put("/user/:id", userHandler.HandlePutUser)
 	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)
 	apiv1.Get("/user/:id", userHandler.HandleGetUser)
+
+	apiv1.Get("/hotel", hotelHandler.HandleGetHotels)
 
 	app.Listen(*port)
 }
